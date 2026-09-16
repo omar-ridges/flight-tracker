@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import FlightSearch from '@/components/FlightSearch';
 import FlightDetails from '@/components/FlightDetails';
 import { fetchFlight } from '@/lib/api';
@@ -101,9 +102,17 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-100 bg-white mt-auto">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-sm text-gray-500">
-            Flight Tracker - Powered by AviationStack
-          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-sm text-gray-500">
+              Flight Tracker - Powered by AviationStack
+            </p>
+            <Link
+              href="/legal"
+              className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+            >
+              Legal
+            </Link>
+          </div>
         </div>
       </footer>
     </main>
