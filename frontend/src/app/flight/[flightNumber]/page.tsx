@@ -1,27 +1,40 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import FlightSearch from '@/components/FlightSearch';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import FlightDetails from '@/components/FlightDetails';
 import { fetchFlight } from '@/lib/api';
+import { Flight } from '@/types/flight';
 
-export default function Home() {
+export default function FlightDetailPage() {
+  const params = useParams();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const flightNumber = decodeURIComponent(params.flightNumber as string);
+
+  const [flight, setFlight] = useState<Flight | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = async (flightNumber: string) => {
+  useEffect(() => {
+    if (!flightNumber) return;
+
     setIsLoading(true);
     setError(null);
 
-    try {
-      // Validate the flight exists before navigating
-      await fetchFlight(flightNumber);
-      router.push(`/flight/${encodeURIComponent(flightNumber)}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-      setIsLoading(false);
-    }
+    fetchFlight(flightNumber)
+      .then((data) => {
+        setFlight(data);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [flightNumber]);
+
+  const handleBack = () => {
+    router.push('/');
   };
 
   return (
@@ -30,9 +43,12 @@ export default function Home() {
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
               <svg
-                className="w-6 h-6 text-white"
+                className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -41,34 +57,24 @@ export default function Home() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
                 />
               </svg>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Flight Tracker</h1>
-              <p className="text-sm text-gray-500">Track flights in real-time</p>
-            </div>
+              <span className="font-medium">Back</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Search Section */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Track Your Flight
-          </h2>
-          <p className="text-gray-600">
-            Enter a flight number to get real-time status and details
-          </p>
-        </div>
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isLoading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+          </div>
+        )}
 
-        <FlightSearch onSearch={handleSearch} isLoading={isLoading} />
-
-        {/* Error Message */}
         {error && (
-          <div className="mt-6 max-w-md mx-auto p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="max-w-md mx-auto p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start gap-3">
               <svg
                 className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"
@@ -85,6 +91,12 @@ export default function Home() {
               </svg>
               <p className="text-sm text-red-700">{error}</p>
             </div>
+          </div>
+        )}
+
+        {flight && !isLoading && (
+          <div className="view-transition-slide">
+            <FlightDetails flight={flight} />
           </div>
         )}
       </section>
