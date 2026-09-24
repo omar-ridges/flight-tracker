@@ -4,6 +4,8 @@ A Python command-line tool and web application for looking up publicly available
 flight details by flight number. The default provider is the AviationStack
 flights API, which supports IATA flight-number queries.
 
+advancing head while work is queued
+
 ## Requirements
 
 - Python 3.9 or newer
