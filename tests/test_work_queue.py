@@ -16,7 +16,19 @@ from work_queue import (
 
 @pytest.fixture()
 def repo(tmp_path):
-    """A scratch git repository with an initial commit on main."""
+    """Create a temporary scratch git repository for a single test.
+
+    The repository is initialised (via ``git init -b main``) inside a
+    pytest ``tmp_path`` directory so every test gets a fresh, isolated
+    copy that never touches the real working repository. It is configured
+    with a deterministic test identity (user.name/user.email) and seeded
+    with one initial commit on the ``main`` branch containing a single
+    tracked file, ``file.txt``, so branches can be created, deleted,
+    renamed, and advanced from a known starting point.
+
+    Returns:
+        pathlib.Path: Path to the scratch repository root.
+    """
     path = tmp_path / "repo"
     path.mkdir()
     def git(*args, check=True):
