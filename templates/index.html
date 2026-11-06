@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flight Tracker</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">✈</span>
+      <h1>Flight Tracker</h1>
+    </div>
+    <input id="search" type="search" placeholder="Search flight, airline, airport, city…" autocomplete="off">
+    <span id="updated" class="updated"></span>
+  </header>
+
+  <main>
+    <p id="error" class="error" hidden></p>
+    <table id="flights">
+      <thead>
+        <tr>
+          <th>Flight</th>
+          <th>Airline</th>
+          <th>Aircraft</th>
+          <th>Route</th>
+          <th>Status</th>
+          <th>Progress</th>
+          <th>Departure</th>
+          <th>Arrival</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="empty" class="empty" hidden>No flights match your search.</p>
+  </main>
+
+  <div id="modal-backdrop" class="backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <button id="modal-close" class="close" aria-label="Close">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
