@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flight Tracker</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --accent:#38bdf8; --text:#e2e8f0; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:16px 24px; background:#0b1220; display:flex; align-items:center; gap:16px; }
+  header h1 { font-size:1.2rem; margin:0; }
+  header input { padding:8px 12px; border-radius:8px; border:1px solid #334155;
+                 background:#111c31; color:var(--text); width:260px; }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; }
+  .card { background:var(--card); border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .card h2 { margin:0 0 4px; font-size:1.1rem; color:var(--accent); }
+  .route { color:#94a3b8; margin-bottom:8px; }
+  .status { display:inline-block; padding:2px 10px; border-radius:999px; font-size:.8rem; }
+  .status.En-Route { background:#065f46; color:#a7f3d0; }
+  .status.Scheduled { background:#1e3a8a; color:#bfdbfe; }
+  .status.Delayed { background:#7f1d1d; color:#fecaca; }
+  .meta { margin-top:8px; font-size:.85rem; color:#94a3b8; }
+  #error { color:#f87171; }
+  #refresh { margin-left:auto; background:var(--accent); color:#0b1220; border:0;
+             padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>✈️ Flight Tracker</h1>
+  <input id="search" type="search" placeholder="Search flight, airline, airport…" oninput="load()">
+  <button id="refresh" onclick="load()">Refresh</button>
+</header>
+<main>
+  <p id="error"></p>
+  <div class="grid" id="flights"></div>
+</main>
+<script>
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+async function load(){
+  const q=document.getElementById('search').value;
+  try{
+    const r=await fetch('/api/flights?q='+encodeURIComponent(q));
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    document.getElementById('error').textContent='';
+    const el=document.getElementById('flights');
+    el.innerHTML = data.flights.length ? data.flights.map(f=>`
+      <div class="card">
+        <h2>${esc(f.id)}</h2>
+        <div class="route">${esc(f.origin)} → ${esc(f.destination)} · ${esc(f.airline)}</div>
+        <span class="status ${esc(f.status).replace(' ','-')}">${esc(f.status)}</span>
+        <div class="meta">Departs ${esc(f.departure)} · Arrives ${esc(f.arrival)}</div>
+        <div class="meta">Alt ${f.altitude_ft.toLocaleString()} ft · ${f.speed_kts} kts ·
+             ${esc(f.lat)}, ${esc(f.lon)}</div>
+      </div>`).join('')
+      : '<p>No flights match your search.</p>';
+  }catch(e){
+    document.getElementById('error').textContent='Failed to load flights: '+e.message;
+  }
+}
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>
