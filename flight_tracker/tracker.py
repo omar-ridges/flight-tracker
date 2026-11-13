@@ -12,10 +12,41 @@ class AdminPermissionError(PermissionError):
 
 @dataclass(frozen=True)
 class User:
-    """A tracker user; only admins may stop the tracker."""
+    """A tracker user identity.
+
+    Carries only an identity name. Authority (admin status) is never taken
+    from this object; it is resolved against a trusted
+    :class:`AdminRegistry` configured by the application's authentication
+    boundary.
+    """
 
     name: str
-    is_admin: bool = False
+
+
+class AdminRegistry:
+    """Trusted registry of admin identities.
+
+    Only code holding the registry itself (e.g. the application's
+    authentication boundary, after verifying credentials) may grant or
+    revoke admin status. Callers of :meth:`FlightTracker.admin_stop` cannot
+    forge authority by constructing a :class:`User`.
+    """
+
+    def __init__(self) -> None:
+        """Create an empty registry; nobody is an admin by default."""
+        self._admins: set[str] = set()
+
+    def register_admin(self, name: str) -> None:
+        """Grant admin status to ``name`` (trusted operation only)."""
+        self._admins.add(name)
+
+    def revoke_admin(self, name: str) -> None:
+        """Revoke admin status from ``name``."""
+        self._admins.discard(name)
+
+    def is_admin(self, user: User) -> bool:
+        """Whether ``user`` is a registered admin."""
+        return user.name in self._admins
 
 
 class FlightTracker:
@@ -25,9 +56,12 @@ class FlightTracker:
     admin-only action (see :meth:`admin_stop`).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, admin_registry: AdminRegistry | None = None) -> None:
         self._running = False
         self._tracked_flights: List[str] = []
+        # Deny-by-default: with no registry supplied, nobody can stop the
+        # tracker until the application provides its trusted registry.
+        self._admin_registry = admin_registry if admin_registry is not None else AdminRegistry()
 
     @property
     def is_running(self) -> bool:
@@ -59,7 +93,7 @@ class FlightTracker:
         no-op). Raises :class:`AdminPermissionError` for non-admin users,
         leaving tracker state untouched.
         """
-        if not user.is_admin:
+        if not self._admin_registry.is_admin(user):
             raise AdminPermissionError(
                 f"user {user.name!r} is not allowed to stop the tracker"
             )

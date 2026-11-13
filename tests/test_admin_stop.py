@@ -2,15 +2,17 @@
 
 import unittest
 
-from flight_tracker import AdminPermissionError, FlightTracker, User
+from flight_tracker import AdminPermissionError, AdminRegistry, FlightTracker, User
 
 
 class AdminStopTests(unittest.TestCase):
     def setUp(self):
-        self.tracker = FlightTracker()
+        self.registry = AdminRegistry()
+        self.tracker = FlightTracker(admin_registry=self.registry)
         self.tracker.start()
-        self.admin = User(name="omar", is_admin=True)
-        self.regular = User(name="guest", is_admin=False)
+        self.admin = User(name="omar")
+        self.regular = User(name="guest")
+        self.registry.register_admin("omar")
 
     # -- lifecycle errors --------------------------------------------------
 
@@ -34,8 +36,40 @@ class AdminStopTests(unittest.TestCase):
     def tracked_flights_snapshot(self):
         return self.tracker.tracked_flights
 
-    def test_user_defaults_to_non_admin(self):
-        self.assertFalse(User(name="anon").is_admin)
+    # -- trusted authorization boundary ------------------------------------
+
+    def test_forged_admin_flag_cannot_stop(self):
+        # Even if a caller could previously claim admin authority, User
+        # carries no authority; only the registry does.
+        fresh_tracker = FlightTracker(admin_registry=self.registry)
+        fresh_tracker.start()
+        with self.assertRaises(AdminPermissionError):
+            fresh_tracker.admin_stop(User(name="guest"))
+        self.assertTrue(fresh_tracker.is_running)
+
+    def test_tracker_without_registry_denies_everyone(self):
+        fresh = FlightTracker()
+        fresh.start()
+        with self.assertRaises(AdminPermissionError):
+            fresh.admin_stop(User(name="omar"))
+        self.assertTrue(fresh.is_running)
+
+    def test_revoke_admin_denies_stop(self):
+        self.registry.revoke_admin("omar")
+        with self.assertRaises(AdminPermissionError):
+            self.tracker.admin_stop(self.admin)
+        self.assertTrue(self.tracker.is_running)
+
+    def test_revoke_non_registered_admin_is_noop(self):
+        self.registry.revoke_admin("nobody-here")  # must not raise
+
+    def test_register_admin_grants_stop(self):
+        self.registry.register_admin("guest")
+        self.assertEqual(self.tracker.admin_stop(self.regular), "stopped")
+
+    def test_registry_is_admin(self):
+        self.assertTrue(self.registry.is_admin(self.admin))
+        self.assertFalse(self.registry.is_admin(self.regular))
 
     # -- authorization ----------------------------------------------------
 
@@ -64,7 +98,7 @@ class AdminStopTests(unittest.TestCase):
         self.assertFalse(self.tracker.is_running)
 
     def test_stop_when_never_started_is_idempotent(self):
-        fresh = FlightTracker()
+        fresh = FlightTracker(admin_registry=self.registry)
         self.assertEqual(fresh.admin_stop(self.admin), "already-stopped")
         self.assertFalse(fresh.is_running)
 

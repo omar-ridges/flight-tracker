@@ -67,3 +67,9 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# python test/coverage artifacts
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
