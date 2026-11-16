@@ -14,10 +14,9 @@ class AdminPermissionError(PermissionError):
 class User:
     """A tracker user identity.
 
-    Carries only an identity name. Authority (admin status) is never taken
-    from this object; it is resolved against a trusted
-    :class:`AdminRegistry` configured by the application's authentication
-    boundary.
+    Carries only an identity name. Admin status is resolved by matching
+    ``name`` against a trusted :class:`AdminRegistry`. Only the application's
+    authentication boundary may construct a ``User`` from a verified identity.
     """
 
     name: str
@@ -26,10 +25,11 @@ class User:
 class AdminRegistry:
     """Trusted registry of admin identities.
 
-    Only code holding the registry itself (e.g. the application's
-    authentication boundary, after verifying credentials) may grant or
-    revoke admin status. Callers of :meth:`FlightTracker.admin_stop` cannot
-    forge authority by constructing a :class:`User`.
+    Only code holding the registry itself may grant or revoke admin status.
+    :meth:`FlightTracker.admin_stop` trusts the :class:`User` it receives.
+    A caller that constructs ``User(name=...)`` with a registered admin name
+    gains admin authority, so the application must construct ``User`` objects
+    only from authenticated identities.
     """
 
     def __init__(self) -> None:

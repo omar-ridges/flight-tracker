@@ -36,11 +36,11 @@ class AdminStopTests(unittest.TestCase):
     def tracked_flights_snapshot(self):
         return self.tracker.tracked_flights
 
-    # -- trusted authorization boundary ------------------------------------
+    # -- authorization boundary --------------------------------------------
 
-    def test_forged_admin_flag_cannot_stop(self):
-        # Even if a caller could previously claim admin authority, User
-        # carries no authority; only the registry does.
+    def test_unregistered_user_cannot_stop(self):
+        # User carries no authority; admin status is matched by name against
+        # the registry, so an unregistered user is denied.
         fresh_tracker = FlightTracker(admin_registry=self.registry)
         fresh_tracker.start()
         with self.assertRaises(AdminPermissionError):
